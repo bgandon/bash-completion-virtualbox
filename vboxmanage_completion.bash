@@ -23,7 +23,7 @@ _vboxmanage() {
     # echo "cur: |$cur|"
     # echo "prev: |$prev|"
 
-    case $prev in 
+    case $prev in
 	-v|--version)
 	    return 0
 	    ;;
@@ -31,7 +31,7 @@ _vboxmanage() {
 	-l|--long)
 	    opts=$(__vboxmanage_list "long")
 	    COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
-	    return 0	    
+	    return 0
 	    ;;
 	--nic[1-8])
 	    # This is part of modifyvm subcommand
@@ -41,8 +41,8 @@ _vboxmanage() {
 	startvm|list)
 	    opts=$(__vboxmanage_$prev)
 	    COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
-	    return 0	    
-	    ;;	
+	    return 0
+	    ;;
 	--type)
 	    COMPREPLY=($(compgen -W "gui headless" -- ${cur}))
 	    return 0
@@ -59,7 +59,7 @@ _vboxmanage() {
 		    return 0
 		    ;;
 	    esac
-	    
+
 	    # echo "Got vboxmanage"
 	    opts=$(__vboxmanage_default)
 	    COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
@@ -123,6 +123,16 @@ _vboxmanage_realopts() {
 	grep '\[' | \
 	tr -s '[\[\]\|]' ' ' \
     ) 
+    echo " "
+}
+
+__vboxmanage_realopts_4_3() {
+    echo $( vboxmanage | \
+    cut -d' ' -f3 | \
+    grep '.\+' | \
+    uniq | \
+    tail -n +11 \
+    )
     echo " "
 }
 
@@ -251,7 +261,16 @@ __vboxmanage_showvminfo_active_nics() {
 }
 
 __vboxmanage_default() {
-    realopts=$(_vboxmanage_realopts)
+    ver=$(vboxmanage --version)
+    case ${ver} in
+    4.3*)
+        realopts=$(__vboxmanage_realopts_4_3)
+        ;;
+    *)
+        realopts=$(_vboxmanage_realopts)
+        ;;
+    esac
+
     opts=$realopts$(vboxmanage | grep -i vboxmanage | cut -d' ' -f2 | grep -v '\[' | sort | uniq)
     pruned=""
 
@@ -293,9 +312,9 @@ __vboxmanage_default() {
 	done
 	(( $MATCH == 1 )) && continue;
 	pruned="$pruned $WORD"
-	
+
     done
-    
+
     # COMPREPLY=($(compgen -W "${pruned}" -- ${cur}))
     echo $pruned
     return 0
