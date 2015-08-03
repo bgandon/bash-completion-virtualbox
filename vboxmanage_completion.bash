@@ -2,8 +2,8 @@
 #
 # Bash completion script for VBoxManage
 #
-# Copyright (c) 2012  Thomas Malt <thomas@malt.no>
-# Copyright (c) 2015  Benjamin Gandon <https://github.com/bgandon>
+# Copyright (c) 2012, Thomas Malt <thomas@malt.no>
+# Copyright (c) 2015, Benjamin Gandon <https://github.com/bgandon>
 #
 
 complete -F _vboxmanage 'vboxmanage'
