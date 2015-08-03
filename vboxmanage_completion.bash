@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 #
 # Attempt at autocompletion script for vboxmanage. This scripts assumes an
 # alias between VBoxManage and vboxmanaage.
