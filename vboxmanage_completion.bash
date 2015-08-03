@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 #
-# Attempt at autocompletion script for vboxmanage. This scripts assumes an
-# alias between VBoxManage and vboxmanaage.
+# Bash completion script for VBoxManage
 #
 # Copyright (c) 2012  Thomas Malt <thomas@malt.no>
+# Copyright (c) 2015  Benjamin Gandon <https://github.com/bgandon>
 #
 
-alias vboxmanage="VBoxManage"
-
-complete -F _vboxmanage vboxmanage
+complete -F _vboxmanage 'vboxmanage'
+complete -F _vboxmanage VBoxManage
 
 # export VBOXMANAGE_NIC_TYPES
 
@@ -55,7 +54,7 @@ _vboxmanage() {
             # Done. no more completion possible
             return 0
             ;;
-        vboxmanage)
+        vboxmanage|VBoxManage)
             # In case current is complete command we return emmideatly.
             case $cur in
                 startvm|list|controlvm|showvminfo|modifyvm)
@@ -63,8 +62,6 @@ _vboxmanage() {
                     return 0
                     ;;
             esac
-            # echo "Got vboxmanage"
-            # opts=$(__vboxmanage_default)
             # Note: the default sed in OS X only supports \{1,\} and not \+
             opts="$(__vboxmanage_default)"
             COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
@@ -89,6 +86,7 @@ _vboxmanage() {
     esac
 
     if echo " $(__vboxmanage_list-all-vms) " | grep -Fq " $prev "; then
+        VM="$prev"
         pprev=${COMP_WORDS[COMP_CWORD-2]}
         # echo "previous: $pprev"
         case $pprev in
@@ -121,7 +119,7 @@ _vboxmanage() {
 }
 
 __vboxmanage_nic_types() {
-    vboxmanage \
+    VBoxManage \
         | grep -F ' nic<' \
         | sed -e 's/.*nic<1-N> \([a-z\|]*\).*/\1/' \
         | tr '|' ' '
@@ -139,7 +137,7 @@ function __vboxmanage_list-all-vms {
     fi
 
     VMS=
-    for VM in $(vboxmanage list vms | __vboxmanage_extract-vm-names); do
+    for VM in $(VBoxManage list vms | __vboxmanage_extract-vm-names); do
         [ -n "$VMS" ] && VMS="${VMS}${SEPARATOR}"
         VMS="${VMS}${VM}"
     done
@@ -155,7 +153,7 @@ function __vboxmanage_list-running-vms {
     fi
 
     VMS=""
-    for VM in $(vboxmanage list runningvms | cut -d' ' -f1 | tr -d '"'); do
+    for VM in $(VBoxManage list runningvms | cut -d' ' -f1 | tr -d '"'); do
         [ -n "$VMS" ] && VMS="${VMS}${SEPARATOR}"
         VMS="${VMS}${VM}"
     done
@@ -178,7 +176,7 @@ function __vboxmanage_list-stopped-vms {
 }
 
 __vboxmanage_list() {
-    INPUT=$(vboxmanage list | tr -s '\n[]|' ' ' | cut -d' ' -f4-)
+    INPUT=$(VBoxManage list | tr -s '\n[]|' ' ' | cut -d' ' -f4-)
 
     PRUNED=""
     if [ "$1" == "long" ]; then
@@ -198,7 +196,7 @@ __vboxmanage_list() {
 __vboxmanage_controlvm() {
     local VM="$1"
     options=$( \
-        vboxmanage controlvm \
+        VBoxManage controlvm \
             | grep '^                            [a-z]' \
             | sed -e 's/^ *\([a-z<1N>|-]\{1,\}\).*/\1/; s/\|$//' \
             | tr -d ' ' \
@@ -210,7 +208,7 @@ __vboxmanage_controlvm() {
 
     # setlinkstate<1-N> nic<1-N> nictrace<1-N> nictracefile<1-N> nicproperty<1-N> nicpromisc<1-N> natpf<1-N> natpf<1-N>
     nic_cmds=
-    for num in $(__vboxmanage_list-active-nics-nums "$VM"); do
+    for num in $(__vboxmanage_list-active-nic-nums "$VM"); do
         for nic_opt in $nic_opts; do
             nic_cmds="$nic_cmds $nic_opt$num"
         done
@@ -221,7 +219,7 @@ __vboxmanage_controlvm() {
 
 __vboxmanage_modifyvm() {
     options=$( \
-        vboxmanage modifyvm \
+        VBoxManage modifyvm \
             | grep -F '[--' \
             | grep -Fv '[--nic<' \
             | sed 's/ *\[--\([a-z-]*\).*/--\1/' \
@@ -234,16 +232,17 @@ __vboxmanage_modifyvm() {
     echo $options
 }
 
-function __vboxmanage_list-active-nics-nums {
+function __vboxmanage_list-active-nic-nums {
     local VM="$1"
-    vboxmanage showvminfo "$VM" --machinereadable \
+    VBoxManage showvminfo "$VM" --machinereadable \
         | awk '/^nic[1-8]=/ && ! /="none"$/' \
         | cut -d= -f1 \
         | sed -e 's/^nic//'
 }
 
 __vboxmanage_default() {
-    options=$(vboxmanage | sed -n -e 's/^ \{2\}\[\([a-z|-]\{1,\}\).*$/\1/p' | tr '|' ' ')
-    commands=$(vboxmanage | sed -n -e 's/^ \{2\}\([a-z-]\{1,\}\).*$/\1/p' | uniq)
+    help_text=$(VBoxManage)
+    options=$(echo "$help_text" | sed -n -e 's/^ \{2\}\[\([a-z|-]\{1,\}\).*$/\1/p' | tr '|' ' ')
+    commands=$(echo "$help_text" | sed -n -e 's/^ \{2\}\([a-z-]\{1,\}\).*$/\1/p' | uniq)
     echo $options $commands
 }
