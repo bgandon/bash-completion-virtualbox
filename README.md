@@ -76,8 +76,10 @@ with
 Authors and License
 -------------------
 
-Copyright (c) 2012, [Thomas Malt](https://github.com/tfmalt)
-Copyright (c) 2015, [Benjamin Gandon](https://github.com/bgandon)
+Copyright © 2012, [Thomas Malt](https://github.com/tfmalt)
+
+Copyright © 2015, [Benjamin Gandon](https://github.com/bgandon)
+
 All rights reserved.
 
-Code is under the [BSD 2 Clause (NetBSD) license](LICENSE.txt).
+For more details, this code is under the [BSD 2 Clause (NetBSD) license](LICENSE.txt).
