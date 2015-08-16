@@ -36,7 +36,7 @@ _vboxmanage() {
             opts=$(__vboxmanage_nic_types)
             COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
             ;;
-        startvm)
+        startvm|unregistervm)
             opts=$(__vboxmanage_list-stopped-vms)
             COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
             return 0
@@ -83,6 +83,16 @@ _vboxmanage() {
             COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
             return 0
             ;;
+        registervm)
+            # It's quite hard to manage sapces in filenames and tilde exampansion
+            # But the _filedir function in /etc/bash_completion does this for us.
+            # On Debian: /usr/share/bash-completion/bash_completion
+            # On OSX with Homebrew: /usr/local/etc/bash_completion
+            #
+            # See: <http://unix.stackexchange.com/a/77048>
+            _filedir vbox
+            return 0
+            ;;
     esac
 
     if echo " $(__vboxmanage_list-all-vms) " | grep -Fq " $prev "; then
@@ -107,6 +117,11 @@ _vboxmanage() {
                 ;;
             modifyvm)
                 opts=$(__vboxmanage_modifyvm)
+                COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+                return 0
+                ;;
+            unregistervm)
+                opts="--delete"
                 COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
                 return 0
                 ;;
