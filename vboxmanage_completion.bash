@@ -162,13 +162,13 @@ function __vboxmanage_list-running-vms {
 }
 
 function __vboxmanage_list-stopped-vms {
-    RUNNING=$(__vboxmanage_list-all-vms)
+    RUNNING=$(__vboxmanage_list-running-vms)
 
     STOPPED=""
-    for VM in $(__vboxmanage_list-running-vms); do
+    for VM in $(__vboxmanage_list-all-vms); do
         # Note: here we add spaces before and after both text and pattern
         #       in order to produce matches only on complete VM names
-        if echo " $RUNNING " | grep -Fqv " $VM "; then
+        if echo "$RUNNING" | grep -Fqv $VM; then
             STOPPED="$STOPPED $VM"
         fi
     done
