@@ -77,7 +77,7 @@ _vboxmanage() {
             COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
             return 0
             ;;
-        vrde|setlinkstate*)
+        setlinkstate*|nictrace*|vrde|videocap)
             # vrde is a complete subcommand of controlvm
             opts="on off"
             COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
