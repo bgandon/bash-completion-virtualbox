@@ -127,7 +127,7 @@ _vboxmanage() {
                 ;;
         esac
     else
-        echo "'$prev' not in '$(__vboxmanage_list-all-vms)'"
+        # echo "'$prev' not in '$(__vboxmanage_list-all-vms)'"
     fi
 
     # echo "Got to end withoug completion"
