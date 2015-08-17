@@ -23,64 +23,24 @@ _vboxmanage() {
     # echo "prev: |$prev|"
 
     case $prev in
+        # DEVELOPERS: here the commands are listed in alphabetical order
+        #             so that it can stay consistent
         -v|--version)
             return 0
             ;;
-        -l|--long)
-            opts=$(__vboxmanage_list "long")
-            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+        controlvm|modifyvm|showvminfo)
+            opts=$(__vboxmanage_list-all-vms)
+            COMPREPLY=($(compgen -W "$opts" -- $cur))
             return 0
             ;;
-        --nic[1-8])
-            # This is part of modifyvm subcommand
-            opts=$(__vboxmanage_nic_types)
-            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
-            ;;
-        startvm|unregistervm)
-            opts=$(__vboxmanage_list-stopped-vms)
-            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+        getextradata|setextradata)
+            opts=$(__vboxmanage_list-all-vms)
+            COMPREPLY=($(compgen -W "global $opts" -- $cur))
             return 0
             ;;
         list)
-            opts=$(__vboxmanage_$prev)
-            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
-            return 0
-            ;;
-        --type)
-            COMPREPLY=($(compgen -W "gui headless" -- ${cur}))
-            return 0
-            ;;
-        gui|headless)
-            # Done. no more completion possible
-            return 0
-            ;;
-        vboxmanage|VBoxManage)
-            # In case current is complete command we return emmideatly.
-            case $cur in
-                startvm|list|controlvm|showvminfo|modifyvm)
-                    COMPREPLY=($(compgen -W "$cur "))
-                    return 0
-                    ;;
-            esac
-            # Note: the default sed in OS X only supports \{1,\} and not \+
-            opts="$(__vboxmanage_default)"
-            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
-            return 0
-            ;;
-        -q|--nologo)
-            opts=$(__vboxmanage_default)
-            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
-            return 0
-            ;;
-        controlvm|showvminfo|modifyvm)
-            opts=$(__vboxmanage_list-all-vms)
-            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
-            return 0
-            ;;
-        setlinkstate*|nictrace*|vrde|videocap)
-            # vrde is a complete subcommand of controlvm
-            opts="on off"
-            COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+            opts=$(__vboxmanage_list)
+            COMPREPLY=($(compgen -W "$opts" -- $cur))
             return 0
             ;;
         registervm)
@@ -93,47 +53,109 @@ _vboxmanage() {
             _filedir vbox
             return 0
             ;;
+        startvm|unregistervm)
+            opts=$(__vboxmanage_list-stopped-vms)
+            COMPREPLY=($(compgen -W "$opts" -- $cur))
+            return 0
+            ;;
+        vboxmanage|VBoxManage)
+            opts="$(__vboxmanage_default)"
+            COMPREPLY=($(compgen -W "$opts" -- $cur))
+            return 0
+            ;;
+    esac
+
+    local pprev=${COMP_WORDS[COMP_CWORD-2]}
+    # echo "previous: $pprev"
+    case $pprev in
+        list)
+            case $prev in
+                -l|--long)
+                    opts=$(__vboxmanage_list -l --long)
+                    COMPREPLY=($(compgen -W "$opts" -- $cur))
+                    return 0
+                    ;;
+            esac
+            ;;
+        vboxmanage|VBoxManage)
+            case $prev in
+                -q|--nologo)
+                    opts="$(__vboxmanage_default -q --nologo)"
+                    COMPREPLY=($(compgen -W "$opts" -- $cur))
+                    return 0
+                    ;;
+            esac
+            ;;
     esac
 
     if echo " $(__vboxmanage_list-all-vms) " | grep -Fq " $prev "; then
-        VM="$prev"
-        pprev=${COMP_WORDS[COMP_CWORD-2]}
-        # echo "previous: $pprev"
+        local VM="$prev"
         case $pprev in
             startvm)
-                opts="--type"
-                COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+                opts=""
+                COMPREPLY=($(compgen -W "--type" -- $cur))
                 return 0
                 ;;
             controlvm)
                 opts=$(__vboxmanage_controlvm $VM)
-                COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+                COMPREPLY=($(compgen -W "$opts" -- $cur))
                 return 0;
                 ;;
             showvminfo)
                 opts="--details --machinereadable --log"
-                COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+                COMPREPLY=($(compgen -W "$opts" -- $cur))
                 return 0;
                 ;;
             modifyvm)
                 opts=$(__vboxmanage_modifyvm)
-                COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
-                return 0
-                ;;
-            unregistervm)
-                opts="--delete"
-                COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+                COMPREPLY=($(compgen -W "$opts" -- $cur))
                 return 0
                 ;;
         esac
-    else
-        # echo "'$prev' not in '$(__vboxmanage_list-all-vms)'"
+    # else
+    #     echo "'$prev' not in '$(__vboxmanage_list-all-vms)'"
     fi
+
+    local ppprev=${COMP_WORDS[COMP_CWORD-2]}
+    case $ppprev in
+        controlvm)
+            case $prev in
+                nictrace*|setlinkstate*|videocap|vrde)
+                    COMPREPLY=($(compgen -W "on off" -- $cur))
+                    return 0
+                    ;;
+            esac
+            ;;
+        modifyvm)
+            case $prev in
+                --nic[1-8])
+                    opts=$(__vboxmanage_list-nic-types)
+                    COMPREPLY=($(compgen -W "$opts" -- $cur))
+                    ;;
+            esac
+            ;;
+        showvminfo)
+            COMPREPLY=($(compgen -W "--details --log --machinereadable" -- $cur))
+            return 0
+            ;;
+        startvm)
+            case $prev in
+                --type)
+                    COMPREPLY=($(compgen -W "gui headless separate" -- $cur))
+                    return 0
+                    ;;
+            esac
+            ;;
+        unregistervm)
+            COMPREPLY=($(compgen -W "--delete" -- $cur))
+            return 0
+            ;;
+    esac
 
     # echo "Got to end withoug completion"
 }
 
-__vboxmanage_nic_types() {
+__vboxmanage_list-nic-types() {
     VBoxManage \
         | grep -F ' nic<' \
         | sed -e 's/.*nic<1-N> \([a-z\|]*\).*/\1/' \
@@ -151,7 +173,7 @@ function __vboxmanage_list-all-vms {
         SEPARATOR=$1
     fi
 
-    VMS=
+    local VMS VM
     for VM in $(VBoxManage list vms | __vboxmanage_extract-vm-names); do
         [ -n "$VMS" ] && VMS="${VMS}${SEPARATOR}"
         VMS="${VMS}${VM}"
@@ -190,22 +212,28 @@ function __vboxmanage_list-stopped-vms {
     echo $STOPPED
 }
 
-__vboxmanage_list() {
-    INPUT=$(VBoxManage list | tr -s '\n[]|' ' ' | cut -d' ' -f4-)
-
-    PRUNED=""
-    if [ "$1" == "long" ]; then
-        for WORD in $INPUT; do
-            [ "$WORD" == "-l" ] && continue;
-            [ "$WORD" == "--long" ] && continue;
-
-            PRUNED="$PRUNED $WORD"
+function __vboxmanage_exclude {
+    local list="$1"
+    local filtered word excluded excl_work
+    for word in $list; do
+        excluded=false
+        for excl_word in "$@"; do
+            if [ "$word" = "$excl_word" ]; then
+                excluded=true
+                break
+            fi
         done
-    else
-        PRUNED=$INPUT
-    fi
+        if [ $excluded = false ]; then
+            filtered="$filtered $word"
+        fi
+    done
+    echo $filtered
+}
 
-    echo $PRUNED
+__vboxmanage_list() {
+    opts=$(VBoxManage list | tr -s '\n[]|' ' ' | cut -d' ' -f4-)
+
+    __vboxmanage_exclude "$opts" "$@"
 }
 
 __vboxmanage_controlvm() {
@@ -257,7 +285,10 @@ function __vboxmanage_list-active-nic-nums {
 
 __vboxmanage_default() {
     help_text=$(VBoxManage)
+    # Note: the default sed in OS X only supports \{1,\} and not \+
+    #       that's why we fallback to the latter here
     options=$(echo "$help_text" | sed -n -e 's/^ \{2\}\[\([a-z|-]\{1,\}\).*$/\1/p' | tr '|' ' ')
     commands=$(echo "$help_text" | sed -n -e 's/^ \{2\}\([a-z-]\{1,\}\).*$/\1/p' | uniq)
-    echo $options $commands
+    # echo $options $commands
+    __vboxmanage_exclude "$options $commands" "$@"
 }
