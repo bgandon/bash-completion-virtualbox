@@ -28,14 +28,22 @@ _vboxmanage() {
         -v|--version)
             return 0
             ;;
-        controlvm|modifyvm|showvminfo)
-            opts=$(__vboxmanage_list-all-vms)
+        controlvm)
+            opts=$(__vboxmanage_list-running-vms)
             COMPREPLY=($(compgen -W "$opts" -- $cur))
             return 0
             ;;
-        getextradata|setextradata)
+        getextradata|setextradata|showvminfo)
             opts=$(__vboxmanage_list-all-vms)
-            COMPREPLY=($(compgen -W "global $opts" -- $cur))
+            if [[ $prev =~ [gs]etextradata ]]; then
+                opts="$opts global"
+            fi
+            COMPREPLY=($(compgen -W "$opts" -- $cur))
+            return 0
+            ;;
+        modifyvm|startvm|unregistervm)
+            opts=$(__vboxmanage_list-stopped-vms)
+            COMPREPLY=($(compgen -W "$opts" -- $cur))
             return 0
             ;;
         list)
@@ -51,11 +59,6 @@ _vboxmanage() {
             #
             # See: <http://unix.stackexchange.com/a/77048>
             _filedir vbox
-            return 0
-            ;;
-        startvm|unregistervm)
-            opts=$(__vboxmanage_list-stopped-vms)
-            COMPREPLY=($(compgen -W "$opts" -- $cur))
             return 0
             ;;
         vboxmanage|VBoxManage)
