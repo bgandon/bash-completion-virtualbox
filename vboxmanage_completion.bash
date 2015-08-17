@@ -92,7 +92,6 @@ _vboxmanage() {
         local VM="$prev"
         case $pprev in
             startvm)
-                opts=""
                 COMPREPLY=($(compgen -W "--type" -- $cur))
                 return 0
                 ;;
@@ -167,54 +166,16 @@ function __vboxmanage_extract-vm-names {
 }
 
 function __vboxmanage_list-all-vms {
-    if [ -z "$1" ]; then
-        SEPARATOR=" "
-    else
-        SEPARATOR=$1
-    fi
-
-    local VMS VM
-    for VM in $(VBoxManage list vms | __vboxmanage_extract-vm-names); do
-        [ -n "$VMS" ] && VMS="${VMS}${SEPARATOR}"
-        VMS="${VMS}${VM}"
-    done
-
-    echo $VMS
+    VBoxManage list vms | __vboxmanage_extract-vm-names
 }
 
 function __vboxmanage_list-running-vms {
-    if [ "$1" == "" ]; then
-        SEPARATOR=" "
-    else
-        SEPARATOR=$1
-    fi
-
-    VMS=""
-    for VM in $(VBoxManage list runningvms | cut -d' ' -f1 | tr -d '"'); do
-        [ -n "$VMS" ] && VMS="${VMS}${SEPARATOR}"
-        VMS="${VMS}${VM}"
-    done
-
-    echo $VMS
-}
-
-function __vboxmanage_list-stopped-vms {
-    RUNNING=$(__vboxmanage_list-running-vms)
-
-    STOPPED=""
-    for VM in $(__vboxmanage_list-all-vms); do
-        # Note: here we add spaces before and after both text and pattern
-        #       in order to produce matches only on complete VM names
-        if echo "$RUNNING" | grep -Fqv $VM; then
-            STOPPED="$STOPPED $VM"
-        fi
-    done
-    echo $STOPPED
+    VBoxManage list runningvms | __vboxmanage_extract-vm-names
 }
 
 function __vboxmanage_exclude {
     local list="$1"
-    local filtered word excluded excl_work
+    local filtered word excluded excl_word
     for word in $list; do
         excluded=false
         for excl_word in "$@"; do
@@ -230,38 +191,44 @@ function __vboxmanage_exclude {
     echo $filtered
 }
 
+function __vboxmanage_list-stopped-vms {
+    __vboxmanage_exclude "$(__vboxmanage_list-all-vms)" $(__vboxmanage_list-running-vms)
+}
+
 __vboxmanage_list() {
-    opts=$(VBoxManage list | tr -s '\n[]|' ' ' | cut -d' ' -f4-)
+    local opts=$(VBoxManage list | tr -s '\n[]|' ' ' | cut -d' ' -f4-)
 
     __vboxmanage_exclude "$opts" "$@"
 }
 
 __vboxmanage_controlvm() {
-    local VM="$1"
-    options=$( \
+    local vm="$1"
+    local opts=$( \
         VBoxManage controlvm \
             | grep '^                            [a-z]' \
             | sed -e 's/^ *\([a-z<1N>|-]\{1,\}\).*/\1/; s/\|$//' \
             | tr -d ' ' \
             | tr '|' '\n' \
     )
-    NIC_OR_NAT_OPTS_PATTERN='^(setlinkstate|(nic|nat)[a-z]*)<1-N>'
-    nic_opts="setlinkstate $(echo "$options" | grep -E "$NIC_OR_NAT_OPTS_PATTERN" | sed -e 's/<1-N>//')"
-    options=$(echo "$options" | grep -Ev "$NIC_OR_NAT_OPTS_PATTERN")
+    local nic_or_nat_opts_pattern='^(setlinkstate|(nic|nat)[a-z]*)<1-N>'
+    # NOTE: here we quote "$opts" in order to preserve newlines,
+    #       which enables us to properly use 'grep' and 'grep -v'
+    local nic_opts="setlinkstate $(echo "$opts" | grep -E "$nic_or_nat_opts_pattern" | sed -e 's/<1-N>//')"
+    opts=$(echo "$opts" | grep -Ev "$nic_or_nat_opts_pattern")
 
     # setlinkstate<1-N> nic<1-N> nictrace<1-N> nictracefile<1-N> nicproperty<1-N> nicpromisc<1-N> natpf<1-N> natpf<1-N>
-    nic_cmds=
-    for num in $(__vboxmanage_list-active-nic-nums "$VM"); do
+    local num nic_opt nic_cmds
+    for num in $(__vboxmanage_list-active-nic-nums "$vm"); do
         for nic_opt in $nic_opts; do
             nic_cmds="$nic_cmds $nic_opt$num"
         done
     done
 
-    echo $options $nic_cmds | tr ' ' '\n' | sort | uniq
+    echo $opts $nic_cmds | tr ' ' '\n' | sort | uniq
 }
 
 __vboxmanage_modifyvm() {
-    options=$( \
+    local opts=$( \
         VBoxManage modifyvm \
             | grep -F '[--' \
             | grep -Fv '[--nic<' \
@@ -270,25 +237,24 @@ __vboxmanage_modifyvm() {
     )
     # Exceptions
     for i in {1..8}; do
-        options="$options --nic${i}"
+        opts="$opts --nic${i}"
     done
-    echo $options
+    echo $opts
 }
 
 function __vboxmanage_list-active-nic-nums {
-    local VM="$1"
-    VBoxManage showvminfo "$VM" --machinereadable \
+    local vm="$1"
+    VBoxManage showvminfo "$vm" --machinereadable \
         | awk '/^nic[1-8]=/ && ! /="none"$/' \
         | cut -d= -f1 \
         | sed -e 's/^nic//'
 }
 
 __vboxmanage_default() {
-    help_text=$(VBoxManage)
+    local help_text=$(VBoxManage)
     # Note: the default sed in OS X only supports \{1,\} and not \+
     #       that's why we fallback to the latter here
-    options=$(echo "$help_text" | sed -n -e 's/^ \{2\}\[\([a-z|-]\{1,\}\).*$/\1/p' | tr '|' ' ')
-    commands=$(echo "$help_text" | sed -n -e 's/^ \{2\}\([a-z-]\{1,\}\).*$/\1/p' | uniq)
-    # echo $options $commands
-    __vboxmanage_exclude "$options $commands" "$@"
+    local opts=$(echo "$help_text" | sed -n -e 's/^ \{2\}\[\([a-z|-]\{1,\}\).*$/\1/p' | tr '|' ' ')
+    local cmds=$(echo "$help_text" | sed -n -e 's/^ \{2\}\([a-z-]\{1,\}\).*$/\1/p' | uniq)
+    __vboxmanage_exclude "$opts $cmds" "$@"
 }
