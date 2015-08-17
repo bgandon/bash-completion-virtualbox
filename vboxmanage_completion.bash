@@ -68,6 +68,15 @@ _vboxmanage() {
     local pprev=${COMP_WORDS[COMP_CWORD-2]}
     # echo "previous: $pprev"
     case $pprev in
+        getextradata|setextradata)
+            local context="$prev"
+            opts="$(__vboxmanage_list-keys "$context")"
+            if [ $pprev = getextradata ]; then
+                opts="$opts enumerate"
+            fi
+            COMPREPLY=($(compgen -W "$opts" -- $cur))
+            return 0
+            ;;
         list)
             case $prev in
                 -l|--long)
@@ -152,6 +161,11 @@ _vboxmanage() {
     esac
 
     # echo "Got to end withoug completion"
+}
+
+function __vboxmanage_list-keys {
+    local ctx="$1"
+    VBoxManage getextradata "$ctx" enumerate | sed -ne 's/^Key: \([^,]*\), Value:.*$/\1/p'
 }
 
 __vboxmanage_list-nic-types() {
