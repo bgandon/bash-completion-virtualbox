@@ -100,7 +100,7 @@ _vboxmanage() {
             ;;
     esac
 
-    if echo " $(__vboxmanage_list-all-vms) " | grep -Fq " $prev "; then
+    if echo " " $(__vboxmanage_list-all-vms) " " | grep -Fq " $prev "; then
         local VM="$prev"
         case $pprev in
             startvm)
