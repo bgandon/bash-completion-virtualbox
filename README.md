@@ -83,3 +83,7 @@ Copyright © 2015, [Benjamin Gandon](https://github.com/bgandon)
 All rights reserved.
 
 For more details, this code is under the [BSD 2 Clause (NetBSD) license](LICENSE.txt).
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/bgandon/bash-completion-virtualbox/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
