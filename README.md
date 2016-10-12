@@ -1,4 +1,4 @@
-Bash completion script for VirtualBox [![.](http://gaproxy.gstack.io/UA-68445280-1/bgandon/virtualbox-bash-completion/readme?pixel&dh=github.com)](https://github.com/gstackio/ga-beacon)
+Bash completion script for VirtualBox [![.](http://gaproxy.gstack.io/UA-68445280-1/bgandon/bash-completion-virtualbox/readme?pixel&dh=github.com)](https://github.com/gstackio/ga-beacon)
 =====================================
 
 This script enables you to autocomplete command-line arguments when using
